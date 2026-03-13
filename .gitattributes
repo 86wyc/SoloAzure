@@ -1,16 +1,7 @@
-# 1. Let Git guess, but normalize all text to LF
+# auto eol
 * text=auto
 
-# 2. Force Linux endings for code (Crucial for WSL/Server)
-*.rs     text eol=lf
-*.c      text eol=lf
-*.h      text eol=lf
-*.sh     text eol=lf
-*.toml   text eol=lf
-*.md     text eol=lf
-Makefile text eol=lf
-
-# 3. Explicitly protect binary files (The "Safety Net")
+# additional protection for binary files
 *.png    binary
 *.jpg    binary
 *.jpeg   binary
