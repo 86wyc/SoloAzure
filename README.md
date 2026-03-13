@@ -1,1 +1,1 @@
-# Polyu COMP2432 Operation System Group Project (A)
+# PolyU COMP2432 Operation System Group Project (A)
