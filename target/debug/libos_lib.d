@@ -1,0 +1,1 @@
+/home/wyc/Desktop/PolyUY1S2/Operating\ Systems/GrpProject/SoloAzure/target/debug/libos_lib.rlib: /home/wyc/Desktop/PolyUY1S2/Operating\ Systems/GrpProject/SoloAzure/os_lib/src/lib.rs /home/wyc/Desktop/PolyUY1S2/Operating\ Systems/GrpProject/SoloAzure/os_lib/src/queue.rs

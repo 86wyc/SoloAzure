@@ -1,0 +1,14 @@
+cargo:warning=Package name: dashboard
+cargo:warning=In workspace: true
+cargo:warning=Manifest directory: /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/dashboard
+cargo:warning=Target directory: /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/target
+cargo:warning=Copying templates directory to /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/target/debug...
+cargo:warning=Successfully copied templates to /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/target/debug
+cargo:warning=Copying programfiles directory to /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/target/debug...
+cargo:warning=Successfully copied programfiles to /home/wyc/Desktop/PolyUY1S2/Operating Systems/GrpProject/SoloAzure/target/debug
+cargo:warning=Copying templates to workspace root...
+cargo:warning=Successfully copied to workspace root
+cargo:warning=Copying programfiles to workspace root...
+cargo:warning=Successfully copied to workspace root
+cargo:rerun-if-changed=templates
+cargo:rerun-if-changed=programfiles
