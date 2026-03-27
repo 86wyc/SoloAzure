@@ -1,66 +1,61 @@
-use dashboard::APP;
+mod aggregation_engine;
+mod buffer_manager;
+
+use aggregation_engine::AggregationEngine;
+use buffer_manager::SensorBufferManager;
 use sensor_sim::{
-    accelerometer::Accelerometer,
-    force_sensor::ForceSensor,
-    thermometer::Thermometer,
+    accelerometer::Accelerometer, force_sensor::ForceSensor, thermometer::Thermometer,
     traits::Sensor,
 };
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 
 fn main() {
-    // Initialize 5 sensors: 2 thermometers, 2 accelerometers, 1 force sensor.
-    let mut thermo_1 = Thermometer::new("thermo-1".to_string(), 10);
-    let mut thermo_2 = Thermometer::new("thermo-2".to_string(), 10);
-    let mut accel_1 = Accelerometer::new("accel-1".to_string(), 20);
-    let mut accel_2 = Accelerometer::new("accel-2".to_string(), 20);
-    let mut force_1 = ForceSensor::new("force-1".to_string(), 15);
+    println!("=== Sensor Data Aggregation Platform ===");
+    println!("Component 2: Aggregation Engine\n");
 
-    // Start all sensors (each spawns its own background thread).
-    thermo_1.start();
-    thermo_2.start();
-    accel_1.start();
-    accel_2.start();
-    force_1.start();
+    // Create buffer manager
+    let mut buffer_manager = SensorBufferManager::new(10000);
 
-    let io_handle = std::thread::spawn(move || {
-        // Example gateway loop:
-        // - Read fresh data from each sensor.
-        // - Write that data to per-sensor files (students implement file I/O).
-        // - Later, read those files back so the gateway can process them.
-        loop {
-            if let Some(reading) = thermo_1.read() {
-                // TODO(student): write `reading` to a file like "data/thermo-1.txt".
-                // TODO(student): read from "data/thermo-1.txt" here if gateway consumes files.
-                let _ = reading;
-            }
-            if let Some(reading) = thermo_2.read() {
-                // TODO(student): write `reading` to a file like "data/thermo-2.txt".
-                // TODO(student): read from "data/thermo-2.txt" here if gateway consumes files.
-                let _ = reading;
-            }
-            if let Some(reading) = accel_1.read() {
-                // TODO(student): write `reading` to a file like "data/accel-1.txt".
-                // TODO(student): read from "data/accel-1.txt" here if gateway consumes files.
-                let _ = reading;
-            }
-            if let Some(reading) = accel_2.read() {
-                // TODO(student): write `reading` to a file like "data/accel-2.txt".
-                // TODO(student): read from "data/accel-2.txt" here if gateway consumes files.
-                let _ = reading;
-            }
-            if let Some(reading) = force_1.read() {
-                // TODO(student): write `reading` to a file like "data/force-1.txt".
-                // TODO(student): read from "data/force-1.txt" here if gateway consumes files.
-                let _ = reading;
-            }
+    // Register sensors
+    let thermo_1 = Thermometer::new("thermo-1".to_string(), 10);
+    let thermo_2 = Thermometer::new("thermo-2".to_string(), 10);
+    let accel_1 = Accelerometer::new("accel-1".to_string(), 20);
+    let accel_2 = Accelerometer::new("accel-2".to_string(), 20);
+    let force_1 = ForceSensor::new("force-1".to_string(), 15);
 
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-    });
+    buffer_manager
+        .register_thermometer(thermo_1)
+        .expect("Failed to register thermo-1");
+    buffer_manager
+        .register_thermometer(thermo_2)
+        .expect("Failed to register thermo-2");
+    buffer_manager
+        .register_accelerometer(accel_1)
+        .expect("Failed to register accel-1");
+    buffer_manager
+        .register_accelerometer(accel_2)
+        .expect("Failed to register accel-2");
+    buffer_manager
+        .register_force_sensor(force_1)
+        .expect("Failed to register force-1");
 
-    let dashboard_handle = std::thread::spawn(move || {
-        APP.clone().run();
-    });
+    println!("All 5 sensors registered. Reader threads running...\n");
 
-    let _ = io_handle.join();
-    let _ = dashboard_handle.join();
+    let buffer_arc = Arc::new(buffer_manager);
+
+    // Create and start aggregation engine (1‑second windows, anomaly threshold 2σ)
+    let mut engine = AggregationEngine::new(Duration::from_secs(1), 2.0);
+    engine.start(buffer_arc).expect("Failed to start engine");
+
+    println!("Aggregation engine running. Collecting data for 20 seconds...\n");
+
+    // Let the engine collect data for 20 seconds
+    thread::sleep(Duration::from_secs(20));
+
+    // Shut down engine
+    engine.shutdown();
+
+    println!("\n=== Aggregation test completed ===");
 }
