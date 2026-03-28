@@ -1,7 +1,0 @@
-[package]
-name = "dashboard"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-hotaru = "0.7.7" 
