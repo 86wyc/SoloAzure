@@ -1,5 +1,6 @@
 mod aggregation_engine;
 mod buffer_manager;
+mod storage;
 
 use aggregation_engine::AggregationEngine;
 use buffer_manager::SensorBufferManager;
@@ -10,10 +11,11 @@ use sensor_sim::{
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
+use storage::DataStorage;
 
-fn main() {
+fn main() -> std::io::Result<()> {
     println!("=== Sensor Data Aggregation Platform ===");
-    println!("Component 2: Aggregation Engine\n");
+    println!("Components 2 & 3: Aggregation Engine + Data Storage\n");
 
     // Create buffer manager
     let mut buffer_manager = SensorBufferManager::new(10000);
@@ -45,8 +47,11 @@ fn main() {
 
     let buffer_arc = Arc::new(buffer_manager);
 
-    // Create and start aggregation engine (1‑second windows, anomaly threshold 2σ)
-    let mut engine = AggregationEngine::new(Duration::from_secs(1), 2.0);
+    // Create data storage
+    let storage = Arc::new(DataStorage::new("aggregated_stats.csv", "anomalies.csv")?);
+
+    // Create and start aggregation engine
+    let mut engine = AggregationEngine::new(Duration::from_secs(1), 2.0, storage);
     engine.start(buffer_arc).expect("Failed to start engine");
 
     println!("Aggregation engine running. Collecting data for 20 seconds...\n");
@@ -58,4 +63,5 @@ fn main() {
     engine.shutdown();
 
     println!("\n=== Aggregation test completed ===");
+    Ok(())
 }
