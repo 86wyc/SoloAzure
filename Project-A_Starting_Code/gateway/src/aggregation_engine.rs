@@ -5,6 +5,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use crate::buffer_manager::{SensorBufferManager, UnifiedReading};
+use crate::storage::DataStorage;
 
 // ============================================
 // Data Structures for Aggregated Output
@@ -46,15 +47,21 @@ pub struct AggregationEngine {
     anomaly_threshold: f64,
     running: Arc<AtomicBool>,
     collector_handle: Option<thread::JoinHandle<()>>,
+    storage: Arc<DataStorage>,
 }
 
 impl AggregationEngine {
-    pub fn new(window_duration: Duration, anomaly_threshold: f64) -> Self {
+    pub fn new(
+        window_duration: Duration,
+        anomaly_threshold: f64,
+        storage: Arc<DataStorage>,
+    ) -> Self {
         Self {
             window_duration,
             anomaly_threshold,
             running: Arc::new(AtomicBool::new(true)),
             collector_handle: None,
+            storage,
         }
     }
 
@@ -67,9 +74,16 @@ impl AggregationEngine {
         let window_duration = self.window_duration;
         let anomaly_threshold = self.anomaly_threshold;
         let buffer_clone = Arc::clone(&buffer);
+        let storage_clone = Arc::clone(&self.storage);
 
         let handle = thread::spawn(move || {
-            Self::collector_loop(running, buffer_clone, window_duration, anomaly_threshold);
+            Self::collector_loop(
+                running,
+                buffer_clone,
+                window_duration,
+                anomaly_threshold,
+                storage_clone,
+            );
         });
 
         self.collector_handle = Some(handle);
@@ -88,6 +102,7 @@ impl AggregationEngine {
         buffer: Arc<SensorBufferManager>,
         window_duration: Duration,
         anomaly_threshold: f64,
+        storage: Arc<DataStorage>,
     ) {
         let mut frame_id = 0;
         let mut current_window: HashMap<String, Vec<f64>> = HashMap::new();
@@ -120,7 +135,13 @@ impl AggregationEngine {
                     &current_window,
                     anomaly_threshold,
                 );
-                println!("{}", frame.pretty_print());
+
+                // Write to storage
+                if let Err(e) = storage.write_frame(&frame) {
+                    eprintln!("[Aggregation] Failed to write frame {}: {}", frame_id, e);
+                } else {
+                    println!("{}", frame.pretty_print());
+                }
 
                 frame_id += 1;
                 current_window.clear();
@@ -128,6 +149,8 @@ impl AggregationEngine {
             }
         }
 
+        // Flush storage before exiting
+        let _ = storage.flush();
         println!("[Aggregation] Collector stopped.");
     }
 
@@ -192,6 +215,7 @@ impl AggregationEngine {
     }
 }
 
+// Helper to convert a reading to a numeric value (f64)
 fn reading_to_value(reading: &UnifiedReading) -> Option<f64> {
     match reading {
         UnifiedReading::Thermometer(t) => Some(t.temperature_celsius.into()),
@@ -210,6 +234,7 @@ fn reading_to_value(reading: &UnifiedReading) -> Option<f64> {
     }
 }
 
+// Pretty printing for AggregatedFrame
 impl AggregatedFrame {
     fn pretty_print(&self) -> String {
         let duration = self.window_end - self.window_start;
